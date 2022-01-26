@@ -1,8 +1,10 @@
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponseRedirect
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_str
-from django.contrib.auth.models import User
+from django.urls import reverse
+from django.contrib.auth.models import User, auth
+from django.contrib import messages
 from django.db import IntegrityError
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_bytes
@@ -63,3 +65,29 @@ def signup_view(request):
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
 
+
+def login_user(request):
+    if request.method == "POST":
+        context = {'data': request.POST}
+
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+
+        if not user:
+            messages.add_message(request, messages.ERROR, "Invalid credentials")
+            return render(request, 'login.html', context)
+
+        login(request, user)
+
+        messages.add_message(request, messages.SUCCESS, f"Welcome {user.username}")
+        return redirect(reverse('home'))
+
+    return render(request, 'login.html')
+
+
+def logout_user(request):
+    logout(request)
+    messages.add_message(request, messages.SUCCESS, f"Successfully logged out")
+    return redirect(reverse('login'))
